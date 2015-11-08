@@ -10,18 +10,19 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.genericdrawerLayout.R;
 
 import java.util.ArrayList;
 
-public class MainActivity extends Activity implements OnClickListener {
+public class MainActivity extends Activity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private GenericDrawerLayout mDrawerLayout;
@@ -31,11 +32,51 @@ public class MainActivity extends Activity implements OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initDrawLayout();
+        initView();
 
     }
 
-    private void initDrawLayout() {
+    private void initView() {
+        final TextView msgTV = (TextView) findViewById(R.id.message);
+
+        Spinner spinner = (Spinner) findViewById(R.id.spinner);
+        String [] locs ={"左侧","上方","右侧","下方"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, locs);
+        //设置下拉列表风格
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        //将适配器添加到spinner中去
+        spinner.setAdapter(adapter);
+        spinner.setVisibility(View.VISIBLE);//设置默认显示
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                int gravity = Gravity.LEFT;
+                switch (position) {
+                    case 0:
+                        gravity = Gravity.LEFT;
+                        break;
+                    case 1:
+                        gravity = Gravity.TOP;
+                        break;
+                    case 2:
+                        gravity = Gravity.RIGHT;
+                        break;
+                    case 3:
+                        gravity = Gravity.BOTTOM;
+                        break;
+                    default:
+                        break;
+                }
+                mDrawerLayout.setDrawerGravity(gravity);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+
         mDrawerLayout = (GenericDrawerLayout) findViewById(R.id.genericdrawerlayout);
 
         // 视图1
@@ -46,8 +87,8 @@ public class MainActivity extends Activity implements OnClickListener {
         // mDrawerLayout.setContentLayout(new MFrameLayout(this));
 
         // 可以设置打开时响应Touch的区域范围
-        mDrawerLayout.setTouchSizeOfOpened(Util.dip2px(this, 100));
-        mDrawerLayout.setTouchSizeOfClosed(Util.dip2px(this, 300));
+        /*mDrawerLayout.setTouchSizeOfOpened(Util.dip2px(this, 100));
+        mDrawerLayout.setTouchSizeOfClosed(Util.dip2px(this, 300));*/
 
         // 设置随着位置的变更，背景透明度也改变
         mDrawerLayout.setOpaqueWhenTranslating(true);
@@ -55,36 +96,42 @@ public class MainActivity extends Activity implements OnClickListener {
         // 设置抽屉是否可以打开
         // mDrawerLayout.setOpennable(false);
 
-       // 设置事件回调
+        // 设置事件回调
         mDrawerLayout.setDrawerCallback(new GenericDrawerLayout.DrawerCallbackAdapter() {
             @Override
             public void onStartOpen() {
                 Log.i(TAG, "onStartOpen");
+                msgTV.setText("onStartOpen");
             }
 
             @Override
             public void onEndOpen() {
                 Log.i(TAG, "onEndOpen");
+                msgTV.setText("onEndOpen");
             }
 
             @Override
             public void onStartClose() {
                 Log.i(TAG, "onStartClose");
+                msgTV.setText("onStartOpen");
             }
 
             @Override
             public void onEndClose() {
                 Log.i(TAG, "onEndClose");
+                msgTV.setText("onEndClose");
             }
 
             @Override
             public void onPreOpen() {
                 Log.i(TAG, "onPreOpen");
+                msgTV.setText("onPreOpen");
             }
 
             @Override
             public void onTranslating(int gravity, float translation) {
                 Log.i(TAG, "onTranslating gravity = " + gravity + "  translation = " + translation);
+                msgTV.setText("onTranslating gravity = " + gravity + "  translation = " + translation);
             }
         });
     }
@@ -176,28 +223,6 @@ public class MainActivity extends Activity implements OnClickListener {
             }
 
         });
-    }
-
-    @Override
-    public void onClick(View v) {
-        int gravity = Gravity.LEFT;
-        switch (v.getId()) {
-            case R.id.left:
-                gravity = Gravity.LEFT;
-                break;
-            case R.id.top:
-                gravity = Gravity.TOP;
-                break;
-            case R.id.right:
-                gravity = Gravity.RIGHT;
-                break;
-            case R.id.bottom:
-                gravity = Gravity.BOTTOM;
-                break;
-            default:
-                break;
-        }
-        mDrawerLayout.setDrawerGravity(gravity);
     }
 
 }
