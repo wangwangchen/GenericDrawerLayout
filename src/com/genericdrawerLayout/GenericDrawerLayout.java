@@ -51,8 +51,10 @@ public class GenericDrawerLayout extends FrameLayout {
 	 * 用来响应触摸事件的透明控件
 	 */
 	private TouchView mTouchView;
-	/** 响应触摸事件的控件宽度 */
-	private int mTouchViewSize;
+	/** 关闭状态下，响应触摸事件的控件宽度 */
+	private int mClosedTouchViewSize;
+	/** 打开状态下，响应Touch事件的宽度 */
+	private int mOpenedTouchViewSize;
 	/** 当前抽屉的Gravity */
 	private int mTouchViewGravity = Gravity.RIGHT;
 	/** 用来防止内容部分视图的容器 */
@@ -100,7 +102,8 @@ public class GenericDrawerLayout extends FrameLayout {
 		addView(mDrawView, generateDefaultLayoutParams());
 		// 初始化用来相应触摸的透明View
 		mTouchView = new TouchView(mContext);
-		mTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP);
+		mClosedTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP);
+		mOpenedTouchViewSize = mClosedTouchViewSize;
 		// 初始化用来存放布局的容器
 		mContentLayout = new ContentLayout(mContext);
 		mContentLayout.setVisibility(View.INVISIBLE);
@@ -144,9 +147,15 @@ public class GenericDrawerLayout extends FrameLayout {
 	private class ContentLayout extends FrameLayout {
 
 		private float mDownX, mDownY;
+		private boolean isTouchDown;
 
 		public ContentLayout(Context context) {
 			super(context);
+		}
+
+		@Override
+		public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+			super.requestDisallowInterceptTouchEvent(disallowIntercept);
 		}
 
 		@Override
@@ -154,6 +163,11 @@ public class GenericDrawerLayout extends FrameLayout {
 			if (getVisibility() != View.VISIBLE) {
 				// 内容区域不可见
 				return super.dispatchTouchEvent(event);
+			}
+
+			// TOUCH_DOWN的时候未消化事件
+			if (MotionEvent.ACTION_DOWN != event.getAction() && !isTouchDown) {
+				isChildConsumeTouchEvent = true;
 			}
 
 			Log.e(TAG, "onTouchEvent");
@@ -166,11 +180,19 @@ public class GenericDrawerLayout extends FrameLayout {
 					mAnimating.set(false);
 					// 停止播放动画
 					mAnimator.end();
+					isTouchDown = true;
+				} else {
+					isTouchDown = isDownInRespondArea(event);
 				}
-				mDownX = event.getRawX();
-				mDownY = event.getRawY();
-				performDispatchTouchEvent(event);
-				break;
+				if (isTouchDown) {
+					mDownX = event.getRawX();
+					mDownY = event.getRawY();
+					performDispatchTouchEvent(event);
+				} else {
+					isChildConsumeTouchEvent = true;
+				}
+				super.dispatchTouchEvent(event);
+				return true;
 			case MotionEvent.ACTION_MOVE:
 				if (!isConsumeTouchEvent && !isChildConsumeTouchEvent) {
 
@@ -178,36 +200,47 @@ public class GenericDrawerLayout extends FrameLayout {
                     boolean b = super.dispatchTouchEvent(event);
 
                     // 如果自己还没消化掉事件，看看子view是否需要消费事件
+					boolean goToConsumeTouchEvent = false;
                     switch (mTouchViewGravity) {
                         case Gravity.LEFT:
-                            if ((event.getRawX() - mDownX > mMinDisallowDispatch || Math.abs(event.getRawY() - mDownY) >= mMinDisallowDispatch) && b) {
+                            if ((Math.abs(event.getRawY() - mDownY) >= mMinDisallowDispatch) && b) {
                                 isChildConsumeTouchEvent = true;
                             } else if (event.getRawX() - mDownX < -mMinDisallowDispatch) {
                                 isConsumeTouchEvent = true;
+								goToConsumeTouchEvent = true;
                             }
                             break;
                         case Gravity.RIGHT:
-                            if ((event.getRawX() - mDownX < -mMinDisallowDispatch || Math.abs(event.getRawY() - mDownY) >= mMinDisallowDispatch) && b) {
+                            if ((Math.abs(event.getRawY() - mDownY) >= mMinDisallowDispatch) && b) {
                                 isChildConsumeTouchEvent = true;
                             } else if (event.getRawX() - mDownX > mMinDisallowDispatch) {
                                 isConsumeTouchEvent = true;
+								goToConsumeTouchEvent = true;
                             }
                             break;
                         case Gravity.BOTTOM:
-                            if ((event.getRawY() - mDownY < -mMinDisallowDispatch || Math.abs(event.getRawX() - mDownX) >= mMinDisallowDispatch) && b) {
+                            if ((Math.abs(event.getRawX() - mDownX) >= mMinDisallowDispatch) && b) {
                                 isChildConsumeTouchEvent = true;
                             } else if (event.getRawY() - mDownY > mMinDisallowDispatch) {
                                 isConsumeTouchEvent = true;
+								goToConsumeTouchEvent = true;
                             }
                             break;
                         case Gravity.TOP:
-                            if ((event.getRawY() - mDownY > mMinDisallowDispatch || Math.abs(event.getRawX() - mDownX) >= mMinDisallowDispatch) && b) {
+                            if ((Math.abs(event.getRawX() - mDownX) >= mMinDisallowDispatch) && b) {
                                 isChildConsumeTouchEvent = true;
                             } else if (event.getRawY() - mDownY < -mMinDisallowDispatch) {
                                 isConsumeTouchEvent = true;
+								goToConsumeTouchEvent = true;
                             }
                             break;
                     }
+					if (goToConsumeTouchEvent) {
+						// 如果自己消费了事件，则下发TOUCH_CANCEL事件
+						MotionEvent obtain = MotionEvent.obtain(event);
+						obtain.setAction(MotionEvent.ACTION_CANCEL);
+						super.dispatchTouchEvent(obtain);
+					}
                 }
                 break;
 			}
@@ -224,15 +257,78 @@ public class GenericDrawerLayout extends FrameLayout {
 			case MotionEvent.ACTION_UP:
 			case MotionEvent.ACTION_CANCEL:
 				if (!isConsumeTouchEvent && !isChildConsumeTouchEvent) {
-					// 如果子View以及自己都没消化，则自己消化，防止点击一下，抽屉卡主
+					// 如果子View以及自己都没消化，则自己消化，防止点击一下，抽屉卡住
 					performDispatchTouchEvent(event);
 				}
 				isConsumeTouchEvent = false;
 				isChildConsumeTouchEvent = false;
+				isTouchDown = false;
 				break;
 			}
 
 			return true;
+		}
+
+	}
+
+	/** 是否点击在响应区域 */
+	private boolean isDownInRespondArea(MotionEvent event) {
+		float curTranslation = getCurTranslation();
+		float x = event.getRawX();
+		float y = event.getRawY();
+		switch (mTouchViewGravity) {
+			case Gravity.LEFT:
+				if (x > curTranslation - mOpenedTouchViewSize && x < curTranslation) {
+					return true;
+				}
+				break;
+			case Gravity.RIGHT:
+				if (x > curTranslation && x < curTranslation + mOpenedTouchViewSize) {
+					return true;
+				}
+				break;
+			case Gravity.BOTTOM:
+				if (y > curTranslation && y < curTranslation + mOpenedTouchViewSize) {
+					return true;
+				}
+				break;
+			case Gravity.TOP:
+				if (y > curTranslation - mOpenedTouchViewSize && y < curTranslation) {
+					return true;
+				}
+				break;
+			default:
+				break;
+		}
+		return false;
+	}
+
+	/** 设置关闭状态下，响应触摸事件的控件宽度 */
+	public void setTouchSizeOfClosed(int width) {
+		if (width == 0 || width < 0) {
+			mClosedTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP);
+		} else {
+			mClosedTouchViewSize = width;
+		}
+		ViewGroup.LayoutParams lp = mTouchView.getLayoutParams();
+		if (lp != null) {
+			if (isHorizontalGravity()) {
+				lp.width = mClosedTouchViewSize;
+				lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+			} else {
+				lp.height = mClosedTouchViewSize;
+				lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+			}
+			mTouchView.requestLayout();
+		}
+	}
+
+	/** 设置打开状态下，响应触摸事件的控件宽度 */
+	public void setTouchSizeOfOpened(int width) {
+		if (width <= 0) {
+			mOpenedTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP);
+		} else {
+			mOpenedTouchViewSize = width;
 		}
 	}
 
@@ -251,11 +347,16 @@ public class GenericDrawerLayout extends FrameLayout {
 			}
 			switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN:
+				if (getVisibility() == View.INVISIBLE) {
+					super.dispatchTouchEvent(event);
+					return false;
+				}
 				mContentLayout.setVisibility(View.VISIBLE);
 				adjustContentLayout();
 				if (mDrawerCallback != null) {
 					mDrawerCallback.onPreOpen();
 				}
+				setVisibility(View.INVISIBLE);
 				break;
 			}
 			performDispatchTouchEvent(event);
@@ -459,6 +560,7 @@ public class GenericDrawerLayout extends FrameLayout {
 					mDrawerCallback.onEndClose();
 					mAnimStatus = AnimStatus.CLOSED;
 				}
+				mTouchView.setVisibility(View.VISIBLE);
 				mAnimating.set(false);
 			}
 		});
@@ -592,13 +694,13 @@ public class GenericDrawerLayout extends FrameLayout {
 		switch (mTouchViewGravity) {
 		case Gravity.LEFT:
 		case Gravity.RIGHT:
-			lp.width = mTouchViewSize;
+			lp.width = mClosedTouchViewSize;
 			lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
 			break;
 		case Gravity.TOP:
 		case Gravity.BOTTOM:
 			lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-			lp.height = mTouchViewSize;
+			lp.height = mClosedTouchViewSize;
 			break;
 		}
 		lp.gravity = mTouchViewGravity;
