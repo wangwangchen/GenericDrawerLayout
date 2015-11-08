@@ -170,8 +170,6 @@ public class GenericDrawerLayout extends FrameLayout {
 				isChildConsumeTouchEvent = true;
 			}
 
-			Log.e(TAG, "onTouchEvent");
-
 			// 把事件拦截下来，按条件下发给子View；
 
 			switch (event.getAction()) {
@@ -348,8 +346,7 @@ public class GenericDrawerLayout extends FrameLayout {
 			switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN:
 				if (getVisibility() == View.INVISIBLE) {
-					super.dispatchTouchEvent(event);
-					return false;
+					return super.dispatchTouchEvent(event);
 				}
 				mContentLayout.setVisibility(View.VISIBLE);
 				adjustContentLayout();
