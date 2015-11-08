@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends Activity implements OnClickListener {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     private GenericDrawerLayout mDrawerLayout;
 
     @Override
@@ -47,6 +49,44 @@ public class MainActivity extends Activity implements OnClickListener {
         mDrawerLayout.setTouchSizeOfOpened(Util.dip2px(this, 100));
         mDrawerLayout.setTouchSizeOfClosed(Util.dip2px(this, 300));
 
+        // 设置随着位置的变更，背景透明度也改变
+        mDrawerLayout.setOpaqueWhenTranslating(true);
+
+        // 设置抽屉是否可以打开
+        // mDrawerLayout.setOpennable(false);
+
+       // 设置事件回调
+        mDrawerLayout.setDrawerCallback(new GenericDrawerLayout.DrawerCallbackAdapter() {
+            @Override
+            public void onStartOpen() {
+                Log.i(TAG, "onStartOpen");
+            }
+
+            @Override
+            public void onEndOpen() {
+                Log.i(TAG, "onEndOpen");
+            }
+
+            @Override
+            public void onStartClose() {
+                Log.i(TAG, "onStartClose");
+            }
+
+            @Override
+            public void onEndClose() {
+                Log.i(TAG, "onEndClose");
+            }
+
+            @Override
+            public void onPreOpen() {
+                Log.i(TAG, "onPreOpen");
+            }
+
+            @Override
+            public void onTranslating(int gravity, float translation) {
+                Log.i(TAG, "onTranslating gravity = " + gravity + "  translation = " + translation);
+            }
+        });
     }
 
     /**
