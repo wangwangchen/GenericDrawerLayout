@@ -1,4 +1,4 @@
-package com.genericdrawerLayout;
+package com.simple;
 
 import android.app.Activity;
 import android.content.Context;
@@ -19,18 +19,19 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.genericdrawerLayout.R;
+import com.genericdrawerLayout.GenericDrawerLayout;
 
 import java.util.ArrayList;
 
-public class MainActivity extends Activity {
+public class GenericDrawerActivity extends Activity {
 
-    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = GenericDrawerActivity.class.getSimpleName();
     private GenericDrawerLayout mDrawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_generic_drawer);
 
         initView();
 
@@ -129,9 +130,9 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onTranslating(int gravity, float translation) {
-                Log.i(TAG, "onTranslating gravity = " + gravity + "  translation = " + translation);
-                msgTV.setText("onTranslating gravity = " + gravity + "  translation = " + translation);
+            public void onTranslating(int gravity, float translation, float fraction) {
+                Log.i(TAG, "onTranslating gravity = " + gravity + "\n  translation = " + translation + "\n fraction = " + fraction);
+                msgTV.setText("onTranslating gravity = " + gravity + "\n  translation = " + translation + "\n fraction = " + fraction);
             }
         });
     }

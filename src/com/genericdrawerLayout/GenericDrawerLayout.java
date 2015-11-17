@@ -40,9 +40,9 @@ public class GenericDrawerLayout extends FrameLayout {
      */
     private static final int TOUCH_VIEW_SIZE_DIP = 25;
     /**
-     * 打开抽屉时，默认响应关闭事件的宽度，单位DIP
+     * 打开抽屉时，默认响应关闭事件的宽度
      */
-    private static final int TOUCH_VIEW_SIZE_DIP_OPENED = 35;
+    private static final int TOUCH_VIEW_SIZE_DIP_OPENED = ViewGroup.LayoutParams.MATCH_PARENT;
     /**
      * 用来判断的最小消费事件触发距离，单位DIP
      */
@@ -124,6 +124,10 @@ public class GenericDrawerLayout extends FrameLayout {
      * 绘制背景透明度的View控件
      */
     private DrawView mDrawView;
+    /**
+     * 最大的不透明度
+     */
+    private float mMaxOpaque = 1.0f;
 
     public GenericDrawerLayout(Context context) {
         this(context, null);
@@ -146,14 +150,13 @@ public class GenericDrawerLayout extends FrameLayout {
         // 初始化用来相应触摸的透明View
         mTouchView = new TouchView(mContext);
         mClosedTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP);
-        mOpenedTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP_OPENED);
+        mOpenedTouchViewSize = TOUCH_VIEW_SIZE_DIP_OPENED;
         // 初始化用来存放布局的容器
         mContentLayout = new ContentLayout(mContext);
         mContentLayout.setVisibility(View.INVISIBLE);
         // 添加视图
         addView(mTouchView, generateTouchViewLayoutParams());
-        addView(mContentLayout,
-                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        addView(mContentLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         // 用来判断事件下发的临界距离
         mMinDisallowDispatch = dip2px(mContext, MIN_CONSUME_SIZE_DIP);
     }
@@ -218,6 +221,9 @@ public class GenericDrawerLayout extends FrameLayout {
                 isChildConsumeTouchEvent = true;
             }
 
+            // 如果自己还没消化掉事件，看看子view是否需要消费事件
+            boolean goToConsumeTouchEvent = false;
+
             // 把事件拦截下来，按条件下发给子View；
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -226,6 +232,12 @@ public class GenericDrawerLayout extends FrameLayout {
                         // 停止播放动画
                         mAnimator.end();
                         isTouchDown = true;
+                        isConsumeTouchEvent = true;
+                        goToConsumeTouchEvent = true;
+                        // 如果自己消费了事件，则下发TOUCH_CANCEL事件（防止Button一直处于被按住的状态）
+                        MotionEvent obtain = MotionEvent.obtain(event);
+                        obtain.setAction(MotionEvent.ACTION_CANCEL);
+                        super.dispatchTouchEvent(obtain);
                     } else {
                         // 判断是否点击在响应区域内
                         isTouchDown = isDownInRespondArea(event);
@@ -238,8 +250,10 @@ public class GenericDrawerLayout extends FrameLayout {
                         // 标记为子视图消费事件
                         isChildConsumeTouchEvent = true;
                     }
-                    // 传递给子视图
-                    super.dispatchTouchEvent(event);
+                    if (!goToConsumeTouchEvent) {
+                        // 传递给子视图
+                        super.dispatchTouchEvent(event);
+                    }
                     // 拦截事件
                     return true;
                 case MotionEvent.ACTION_MOVE:
@@ -248,8 +262,6 @@ public class GenericDrawerLayout extends FrameLayout {
                         // 先下发给子View看看子View是否需要消费
                         boolean b = super.dispatchTouchEvent(event);
 
-                        // 如果自己还没消化掉事件，看看子view是否需要消费事件
-                        boolean goToConsumeTouchEvent = false;
                         switch (mTouchViewGravity) {
                             case Gravity.LEFT:
                                 if ((Math.abs(event.getRawY() - mDownY) >= mMinDisallowDispatch) && b) {
@@ -333,28 +345,30 @@ public class GenericDrawerLayout extends FrameLayout {
      */
     private boolean isDownInRespondArea(MotionEvent event) {
         float curTranslation = getCurTranslation();
+        int touchSize;
+        touchSize = mOpenedTouchViewSize == ViewGroup.LayoutParams.MATCH_PARENT ? mContentLayout.getWidth() : mOpenedTouchViewSize;
         float x = event.getX();
         float y = event.getY();
         switch (mTouchViewGravity) {
             case Gravity.LEFT:
                 float xSize = x - mContentLayout.getWidth();
-                if (xSize > curTranslation - mOpenedTouchViewSize && xSize < curTranslation) {
+                if (xSize > curTranslation - touchSize && xSize < curTranslation) {
                     return true;
                 }
                 break;
             case Gravity.RIGHT:
-                if (x > curTranslation && x < curTranslation + mOpenedTouchViewSize) {
+                if (x > curTranslation && x < curTranslation + touchSize) {
                     return true;
                 }
                 break;
             case Gravity.BOTTOM:
-                if (y > curTranslation && y < curTranslation + mOpenedTouchViewSize) {
+                if (y > curTranslation && y < curTranslation + touchSize) {
                     return true;
                 }
                 break;
             case Gravity.TOP:
                 float ySize = y - mContentLayout.getHeight();
-                if (ySize > curTranslation - mOpenedTouchViewSize && ySize < curTranslation) {
+                if (ySize > curTranslation - touchSize && ySize < curTranslation) {
                     return true;
                 }
                 break;
@@ -391,7 +405,7 @@ public class GenericDrawerLayout extends FrameLayout {
      */
     public void setTouchSizeOfOpened(int width) {
         if (width <= 0) {
-            mOpenedTouchViewSize = dip2px(mContext, TOUCH_VIEW_SIZE_DIP);
+            mOpenedTouchViewSize = TOUCH_VIEW_SIZE_DIP_OPENED;
         } else {
             mOpenedTouchViewSize = width;
         }
@@ -476,23 +490,89 @@ public class GenericDrawerLayout extends FrameLayout {
 
     private void translationCallback(float sliding) {
         if (mDrawerCallback != null) {
-            mDrawerCallback.onTranslating(mTouchViewGravity, sliding);
+            float fraction;
+            if (isHorizontalGravity()) {
+                fraction = sliding / mContentLayout.getWidth();
+            } else {
+                fraction = sliding / mContentLayout.getHeight();
+            }
+            mDrawerCallback.onTranslating(mTouchViewGravity, sliding, fraction);
         }
         if (mIsOpaqueWhenTranslating) {
             if (isHorizontalGravity()) {
-                mDrawView.setAlpha(sliding / mContentLayout.getWidth());
+                mDrawView.setAlpha(Math.min(sliding / mContentLayout.getWidth(), mMaxOpaque));
             } else {
-                mDrawView.setAlpha(sliding / mContentLayout.getHeight());
+                mDrawView.setAlpha(Math.min(sliding / mContentLayout.getHeight(), mMaxOpaque));
             }
         }
     }
 
+    /**
+     * 设置在移动抽屉时改变背景透明度
+     * @param isOpaque 是否同时改变背景透明度
+     */
     public void setOpaqueWhenTranslating(boolean isOpaque) {
         this.mIsOpaqueWhenTranslating = isOpaque;
     }
 
+    /**
+     * 设置最大的不透明度
+     * @param maxOpaque 0 - 1， 0全透明，1完全不透明
+     */
+    public void setMaxOpaque(float maxOpaque) {
+        this.mMaxOpaque = maxOpaque;
+    }
+
     public void setContentLayout(View view) {
-        mContentLayout.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mContentLayout.removeAllViews();
+        ViewGroup.LayoutParams lp = view.getLayoutParams();
+        if (lp != null && FrameLayout.LayoutParams.class.isInstance(lp)) {
+            mContentLayout.addView(view, lp);
+        } else {
+            mContentLayout.addView(view);
+        }
+
+        ViewGroup.LayoutParams childLp = view.getLayoutParams();
+        if (childLp != null) {
+            mContentLayout.setLayoutParams(childLp);
+        }
+    }
+
+    public void setContentLayout(View view, FrameLayout.LayoutParams layoutParams) {
+        mContentLayout.removeAllViews();
+        mContentLayout.addView(view, layoutParams);
+        mContentLayout.setLayoutParams(layoutParams);
+    }
+
+    /**
+     * 切换当前抽屉的状态（打开切换成关闭，关闭切换成打开）
+     */
+    public void switchStatus() {
+        if (AnimStatus.CLOSED.equals(mAnimStatus) || AnimStatus.CLOSING.equals(mAnimStatus)) {
+            if (AnimStatus.CLOSED.equals(mAnimStatus)) {
+                confirmOpenViewStatus();
+                adjustContentLayout();
+            } else {
+                if (AnimStatus.CLOSING.equals(mAnimStatus)) {
+                    if (mAnimating.get()) {
+                        mAnimating.set(false);
+                        // 停止播放动画
+                        mAnimator.end();
+                    }
+                }
+            }
+            open();
+        } else if (AnimStatus.OPENED.equals(mAnimStatus) || AnimStatus.OPENING.equals(mAnimStatus)) {
+            confirmOpenViewStatus();
+            if (AnimStatus.OPENING.equals(mAnimStatus)) {
+                if (mAnimating.get()) {
+                    mAnimating.set(false);
+                    // 停止播放动画
+                    mAnimator.end();
+                }
+            }
+            close();
+        }
     }
 
     private void handleTouchUp() {
@@ -542,6 +622,16 @@ public class GenericDrawerLayout extends FrameLayout {
                 }
                 break;
         }
+    }
+
+    private void confirmOpenViewStatus() {
+        mTouchView.setVisibility(View.INVISIBLE);
+        mContentLayout.setVisibility(View.VISIBLE);
+    }
+
+    private void confirmCloseViewStatus() {
+        mTouchView.setVisibility(View.VISIBLE);
+        mContentLayout.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -740,7 +830,7 @@ public class GenericDrawerLayout extends FrameLayout {
         float mStartTranslationY = 0;
         switch (mTouchViewGravity) {
             case Gravity.LEFT:
-                mStartTranslationX = -mContentLayout.getWidth();
+                mStartTranslationX = -mContentLayout.getMeasuredWidth();
                 mStartTranslationY = 0;
                 break;
             case Gravity.RIGHT:
@@ -866,8 +956,9 @@ public class GenericDrawerLayout extends FrameLayout {
          *
          * @param gravity
          * @param translation 移动的距离（当前移动位置到边界的距离，永远为正数）
+         * @param fraction 移动的距离占总距离的百分比，0 - 1
          */
-        void onTranslating(int gravity, float translation);
+        void onTranslating(int gravity, float translation, float fraction);
     }
 
     public static class DrawerCallbackAdapter implements DrawerCallback {
@@ -898,7 +989,7 @@ public class GenericDrawerLayout extends FrameLayout {
         }
 
         @Override
-        public void onTranslating(int gravity, float translation) {
+        public void onTranslating(int gravity, float translation, float fraction) {
 
         }
     }

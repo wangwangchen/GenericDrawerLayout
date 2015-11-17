@@ -1,4 +1,4 @@
-package com.genericdrawerLayout;
+package com.simple;
 
 import android.content.Context;
 
