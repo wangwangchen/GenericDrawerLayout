@@ -97,6 +97,13 @@ public class GenericDrawerActivity extends Activity {
         // 设置抽屉是否可以打开
         // mDrawerLayout.setOpennable(false);
 
+        // 设置抽屉的空白区域大小
+        float v = getResources().getDisplayMetrics().density * 100 + 0.5f; // 70DIP
+        mDrawerLayout.setDrawerEmptySize((int) v);
+
+        // 设置黑色背景的最大透明度
+        // mDrawerLayout.setMaxOpaque(0.6f);
+
         // 设置事件回调
         mDrawerLayout.setDrawerCallback(new GenericDrawerLayout.DrawerCallbackAdapter() {
             @Override

@@ -128,6 +128,10 @@ public class GenericDrawerLayout extends FrameLayout {
      * 最大的不透明度
      */
     private float mMaxOpaque = 1.0f;
+    /**
+     * 抽屉空白区域的大小
+     */
+    private int mDrawerEmptySize;
 
     public GenericDrawerLayout(Context context) {
         this(context, null);
@@ -192,6 +196,13 @@ public class GenericDrawerLayout extends FrameLayout {
 
     }
 
+    public void setDrawerEmptySize(int emptySize) {
+        if (emptySize < 0) {
+            emptySize = 0;
+        }
+        this.mDrawerEmptySize = emptySize;
+    }
+
     /**
      * 抽屉容器
      */
@@ -202,6 +213,63 @@ public class GenericDrawerLayout extends FrameLayout {
 
         public ContentLayout(Context context) {
             super(context);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            // super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            // 设置自身的大小
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+            checkChildCount();
+
+            int size;
+            int childMeasureWidth;
+            int childMeasureHeight;
+            if (isHorizontalGravity()) {
+                size = MeasureSpec.getSize(widthMeasureSpec);
+                size -= mDrawerEmptySize;
+                childMeasureWidth = size;
+                childMeasureHeight = MeasureSpec.getSize(heightMeasureSpec);
+            } else {
+                size = MeasureSpec.getSize(heightMeasureSpec);
+                size -= mDrawerEmptySize;
+                childMeasureHeight = size;
+                childMeasureWidth = MeasureSpec.getSize(widthMeasureSpec);
+            }
+            View child = getChildAt(0);
+            child.measure(MeasureSpec.makeMeasureSpec(childMeasureWidth, MeasureSpec.getMode(widthMeasureSpec)),
+                    MeasureSpec.makeMeasureSpec(childMeasureHeight, MeasureSpec.getMode(heightMeasureSpec)));
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+            super.onLayout(changed, left, top, right, bottom);
+            checkChildCount();
+            // 重新绘制子View的位置
+            View child = getChildAt(0);
+            switch (mTouchViewGravity) {
+                case Gravity.LEFT:
+                    child.layout(left, top, right - mDrawerEmptySize, bottom);
+                    break;
+                case Gravity.TOP:
+                    child.layout(left, top, right, bottom - mDrawerEmptySize);
+                    break;
+                case Gravity.RIGHT:
+                    child.layout(left + mDrawerEmptySize, top, right, bottom);
+                    break;
+                case Gravity.BOTTOM:
+                    child.layout(left, top + mDrawerEmptySize, right, bottom);
+                    break;
+            }
+        }
+
+        /**
+         * 检测自身的子View是否是只有一个
+         */
+        private void checkChildCount() {
+            if (getChildCount() > 1) {
+                throw new RuntimeException("content child views must be one");
+            }
         }
 
         @Override
@@ -489,12 +557,14 @@ public class GenericDrawerLayout extends FrameLayout {
     }
 
     private void translationCallback(float sliding) {
+        // 调整sliding，以免一开始拉背景就变得很黑
+        sliding = sliding > mDrawerEmptySize ? sliding - mDrawerEmptySize : 0;
         if (mDrawerCallback != null) {
             float fraction;
             if (isHorizontalGravity()) {
-                fraction = sliding / mContentLayout.getWidth();
+                fraction = sliding / (mContentLayout.getWidth() - mDrawerEmptySize);
             } else {
-                fraction = sliding / mContentLayout.getHeight();
+                fraction = sliding / (mContentLayout.getHeight() - mDrawerEmptySize);
             }
             mDrawerCallback.onTranslating(mTouchViewGravity, sliding, fraction);
         }
@@ -830,22 +900,23 @@ public class GenericDrawerLayout extends FrameLayout {
         float mStartTranslationY = 0;
         switch (mTouchViewGravity) {
             case Gravity.LEFT:
-                mStartTranslationX = -mContentLayout.getMeasuredWidth();
+                mStartTranslationX = -mContentLayout.getMeasuredWidth() + mDrawerEmptySize;
                 mStartTranslationY = 0;
                 break;
             case Gravity.RIGHT:
-                mStartTranslationX = mContentLayout.getWidth();
+                mStartTranslationX = mContentLayout.getWidth() - mDrawerEmptySize;
                 mStartTranslationY = 0;
                 break;
             case Gravity.TOP:
                 mStartTranslationX = 0;
-                mStartTranslationY = -mContentLayout.getHeight();
+                mStartTranslationY = -mContentLayout.getHeight() + mDrawerEmptySize;
                 break;
             case Gravity.BOTTOM:
                 mStartTranslationX = 0;
-                mStartTranslationY = mContentLayout.getHeight();
+                mStartTranslationY = mContentLayout.getHeight() - mDrawerEmptySize;
                 break;
         }
+
         // 移动抽屉
         ViewHelper.setTranslationX(mContentLayout, mStartTranslationX);
         ViewHelper.setTranslationY(mContentLayout, mStartTranslationY);
@@ -933,6 +1004,7 @@ public class GenericDrawerLayout extends FrameLayout {
         this.mTouchViewGravity = drawerPosition;
         // 更新抽屉位置
         mTouchView.setLayoutParams(generateTouchViewLayoutParams());
+        mContentLayout.requestLayout();
     }
 
     public void setDrawerCallback(DrawerCallback drawerCallback) {
