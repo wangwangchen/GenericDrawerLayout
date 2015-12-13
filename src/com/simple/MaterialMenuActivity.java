@@ -15,7 +15,7 @@ import com.genericdrawerLayout.GenericDrawerLayout;
 import com.genericdrawerLayout.MaterialMenuButton;
 
 /**
- * Material����Activity
+ * Material按钮与抽屉联动效果Activity
  */
 public class MaterialMenuActivity extends Activity implements View.OnClickListener {
 
@@ -43,6 +43,8 @@ public class MaterialMenuActivity extends Activity implements View.OnClickListen
         // 设置抽屉留白
         mGenericDrawerLayout.setDrawerEmptySize((int) (getResources().getDisplayMetrics().density * 120 + 0.5f));
         mMaterialMenuButton.setOnClickListener(this);
+        // 设置不需要自动播放动画，因为抽屉会回调动画的执行
+        mMaterialMenuButton.setAutoAnimating(false);
         mGenericDrawerLayout.setDrawerCallback(mGenericDrawerCallback);
     }
 
