@@ -132,6 +132,10 @@ public class GenericDrawerLayout extends FrameLayout {
      * 抽屉空白区域的大小
      */
     private int mDrawerEmptySize;
+    /**
+     * 用来表示抽屉是否被打开过
+     */
+    private boolean mIsDrawerOpenned = false;
 
     public GenericDrawerLayout(Context context) {
         this(context, null);
@@ -722,6 +726,10 @@ public class GenericDrawerLayout extends FrameLayout {
                         mDrawerCallback.onStartOpen();
                     }
                 }
+                // 确保抽屉是可见的
+                if (mContentLayout.getVisibility() != View.VISIBLE) {
+                    mContentLayout.setVisibility(View.VISIBLE);
+                }
                 // 更新状态
                 mAnimStatus = AnimStatus.OPENING;
             }
@@ -944,6 +952,7 @@ public class GenericDrawerLayout extends FrameLayout {
      * 获取当前移动距离
      */
     private float getCurTranslation() {
+        checkDrawerInit();
         float curTranslation = 0;
         switch (mTouchViewGravity) {
             case Gravity.LEFT:
@@ -956,6 +965,14 @@ public class GenericDrawerLayout extends FrameLayout {
                 break;
         }
         return curTranslation;
+    }
+
+    private void checkDrawerInit() {
+        if (mIsDrawerOpenned) {
+            return;
+        }
+        adjustContentLayout();
+        mIsDrawerOpenned = true;
     }
 
     /**
