@@ -15,7 +15,7 @@ import com.genericdrawerLayout.GenericDrawerLayout;
 import com.genericdrawerLayout.MaterialMenuButton;
 
 /**
- * Material·ç¸ñµÄActivity
+ * Materialï¿½ï¿½ï¿½ï¿½Activity
  */
 public class MaterialMenuActivity extends Activity implements View.OnClickListener {
 
@@ -39,11 +39,10 @@ public class MaterialMenuActivity extends Activity implements View.OnClickListen
         textView.setGravity(Gravity.CENTER);
         textView.setText("GenericDrawerLayout");
         textView.setTextSize(22);
-        mGenericDrawerLayout.setContentLayout(textView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        textView.getLayoutParams().width = Util.dip2px(this, 300);
-
+        mGenericDrawerLayout.setContentLayout(textView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        // è®¾ç½®æŠ½å±‰ç•™ç™½
+        mGenericDrawerLayout.setDrawerEmptySize((int) (getResources().getDisplayMetrics().density * 120 + 0.5f));
         mMaterialMenuButton.setOnClickListener(this);
-
         mGenericDrawerLayout.setDrawerCallback(mGenericDrawerCallback);
     }
 

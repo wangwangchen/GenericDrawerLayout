@@ -16,7 +16,7 @@ import com.nineoldandroids.animation.ValueAnimator;
 import com.nineoldandroids.view.ViewHelper;
 
 /**
- * Material·ç¸ñµÄ²Ëµ¥°´Å¥
+ * Materialï¿½ï¿½ï¿½Ä²Ëµï¿½ï¿½ï¿½Å¥
  */
 public class MaterialMenuButton extends FrameLayout implements ViewTreeObserver.OnGlobalLayoutListener {
 
@@ -211,9 +211,9 @@ public class MaterialMenuButton extends FrameLayout implements ViewTreeObserver.
 
                 mFirstLineRotation = new KeyFrameSet(0, 225);
                 mFirstLineXValues = new KeyFrameSet(mLineLeft, mLineLeft - mLineMaxWidth * 0.1f);
-                mFirstLineYValues = new KeyFrameSet(mFirstLineStartY, mThirdLineStartY);
+                mFirstLineYValues = new KeyFrameSet(mFirstLineStartY, mThirdLineStartY - 2);
                 mThirdLineXValues = new KeyFrameSet(mLineLeft, mLineLeft - mLineMaxWidth * 0.1f);
-                mThirdLineYValues = new KeyFrameSet(mThirdLineStartY, mFirstLineStartY);
+                mThirdLineYValues = new KeyFrameSet(mThirdLineStartY, mFirstLineStartY + 2);
                 mThirdLineRotation = new KeyFrameSet(0, 135);
                 mSecondLineRotation = new KeyFrameSet(0, 180);
                 mFirstOrThirdLineWidth = new KeyFrameSet(mLineMaxWidth, (int) (mLineMaxWidth * 0.7f));
