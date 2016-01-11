@@ -137,6 +137,11 @@ public class GenericDrawerLayout extends FrameLayout {
      */
     private boolean mIsDrawerOpenned = false;
 
+    /**
+     * 抽屉在关闭的时候露出的宽度
+     */
+    private int mRevealSize = 600;
+
     public GenericDrawerLayout(Context context) {
         this(context, null);
     }
@@ -200,6 +205,21 @@ public class GenericDrawerLayout extends FrameLayout {
 
     }
 
+    /**
+     * 设置抽屉在关闭的时候露出的部分大小
+     * @param revealSize
+     */
+    public void setDrawerRevealSize(int revealSize) {
+        if (revealSize < 0) {
+            return;
+        }
+        this.mRevealSize = revealSize;
+    }
+
+    /**
+     * 设置抽屉打开后的空白区域大小
+     * @param emptySize
+     */
     public void setDrawerEmptySize(int emptySize) {
         if (emptySize < 0) {
             emptySize = 0;
@@ -797,7 +817,8 @@ public class GenericDrawerLayout extends FrameLayout {
      */
     private void autoCloseDrawer() {
         mAnimating.set(true);
-        mAnimator = ObjectAnimator.ofFloat(getCurTranslation(), getCloseTranslation());
+        float closeTranslation = getCloseTranslation();
+        mAnimator = ObjectAnimator.ofFloat(getCurTranslation(), closeTranslation);
         mAnimator.setDuration(DURATION_OPEN_CLOSE);
         mAnimator.addUpdateListener(new MyAnimatorUpdateListener());
         mAnimator.addListener(new AnimatorListenerAdapter() {
@@ -908,20 +929,20 @@ public class GenericDrawerLayout extends FrameLayout {
         float mStartTranslationY = 0;
         switch (mTouchViewGravity) {
             case Gravity.LEFT:
-                mStartTranslationX = -mContentLayout.getMeasuredWidth() + mDrawerEmptySize;
+                mStartTranslationX = -mContentLayout.getWidth() + mDrawerEmptySize + mRevealSize;
                 mStartTranslationY = 0;
                 break;
             case Gravity.RIGHT:
-                mStartTranslationX = mContentLayout.getWidth() - mDrawerEmptySize;
+                mStartTranslationX = mContentLayout.getWidth() - mDrawerEmptySize - mRevealSize;
                 mStartTranslationY = 0;
                 break;
             case Gravity.TOP:
                 mStartTranslationX = 0;
-                mStartTranslationY = -mContentLayout.getHeight() + mDrawerEmptySize;
+                mStartTranslationY = -mContentLayout.getHeight() + mDrawerEmptySize + mRevealSize;
                 break;
             case Gravity.BOTTOM:
                 mStartTranslationX = 0;
-                mStartTranslationY = mContentLayout.getHeight() - mDrawerEmptySize;
+                mStartTranslationY = mContentLayout.getHeight() - mDrawerEmptySize - mRevealSize;
                 break;
         }
 
@@ -936,13 +957,13 @@ public class GenericDrawerLayout extends FrameLayout {
     private float getCloseTranslation() {
         switch (mTouchViewGravity) {
             case Gravity.LEFT:
-                return -mContentLayout.getWidth();
+                return -mContentLayout.getWidth() + mRevealSize;
             case Gravity.RIGHT:
-                return mContentLayout.getWidth();
+                return mContentLayout.getWidth() - mRevealSize;
             case Gravity.TOP:
-                return -mContentLayout.getHeight();
+                return -mContentLayout.getHeight() + mRevealSize;
             case Gravity.BOTTOM:
-                return mContentLayout.getHeight();
+                return mContentLayout.getHeight() - mRevealSize;
             default:
                 return 0;
         }

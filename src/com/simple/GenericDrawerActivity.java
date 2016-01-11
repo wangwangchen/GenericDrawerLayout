@@ -98,7 +98,7 @@ public class GenericDrawerActivity extends Activity {
         // mDrawerLayout.setOpennable(false);
 
         // 设置抽屉的空白区域大小
-        float v = getResources().getDisplayMetrics().density * 100 + 0.5f; // 70DIP
+        float v = getResources().getDisplayMetrics().density * 100 + 0.5f; // 100DIP
         mDrawerLayout.setDrawerEmptySize((int) v);
 
         // 设置黑色背景的最大透明度
