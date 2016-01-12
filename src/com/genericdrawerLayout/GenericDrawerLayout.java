@@ -140,7 +140,7 @@ public class GenericDrawerLayout extends FrameLayout {
     /**
      * 抽屉在关闭的时候露出的宽度
      */
-    private int mRevealSize = 600;
+    private int mRevealSize;
 
     public GenericDrawerLayout(Context context) {
         this(context, null);
