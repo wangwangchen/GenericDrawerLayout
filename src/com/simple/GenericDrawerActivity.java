@@ -184,6 +184,12 @@ public class GenericDrawerActivity extends Activity {
             }
         };
         mListView.setAdapter(mListAdapter);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                mDrawerLayout.close();
+            }
+        });
         ViewPager mViewPager = (ViewPager) findViewById(R.id.viewpager);
         final ArrayList<View> viewContainter = new ArrayList<View>();
         int[] colors = new int[]{Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW};

@@ -670,6 +670,9 @@ public class GenericDrawerLayout extends FrameLayout {
     }
 
     private void handleTouchUp() {
+        if (getCurTranslation() == getCloseTranslation() || getCurTranslation() == getOpenTranslation()) {
+            return;
+        }
         // 计算从Down到Up每秒移动的距离
         final VelocityTracker velocityTracker = mVelocityTracker;
         velocityTracker.computeCurrentVelocity(1000);
